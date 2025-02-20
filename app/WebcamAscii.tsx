@@ -61,7 +61,7 @@ export default function WebcamAscii() {
 
     // Adjust these values to change the density of the ASCII art
     const charWidth = 5;
-    const charHeight = 10;
+    const charHeight = 5;
 
     ctx.fillStyle = "white";
     ctx.font = `${charHeight}px monospace`;

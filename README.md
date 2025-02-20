@@ -29,7 +29,7 @@ Check it out [https://webcam2ascii.vercel.app/](https://webcam2ascii.vercel.app/
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/webcam-ascii.git
+git clone https://github.com/fac3m4n/webcam2ascii.git
 ```
 
 2. Install dependencies:

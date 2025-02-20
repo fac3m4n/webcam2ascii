@@ -1,3 +1,8 @@
+import WebcamAscii from "./WebcamAscii";
 export default function Home() {
-  return <div>Hello</div>;
+  return (
+    <div>
+      <WebcamAscii />
+    </div>
+  );
 }

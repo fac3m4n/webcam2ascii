@@ -1,8 +1,8 @@
 import WebcamAscii from "./WebcamAscii";
 export default function Home() {
   return (
-    <div>
+    <main className="w-screen h-screen">
       <WebcamAscii />
-    </div>
+    </main>
   );
 }

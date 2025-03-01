@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -11,6 +11,17 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+const themeColor = [
+  { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+];
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor,
+};
 
 export const metadata: Metadata = {
   title: "Webcam ASCII - Real-time ASCII Art Converter",
@@ -25,11 +36,6 @@ export const metadata: Metadata = {
     "TypeScript",
   ],
   authors: [{ name: "fac3m4n" }],
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
   robots: "index, follow",
   openGraph: {
     type: "website",

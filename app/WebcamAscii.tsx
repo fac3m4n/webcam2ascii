@@ -3,12 +3,84 @@ import type React from "react";
 import { useRef, useEffect, useState } from "react";
 import Webcam from "react-webcam";
 
+// Define color schemes
+type ColorScheme = {
+  name: string;
+  process: (r: number, g: number, b: number, contrast: number) => string;
+};
+
 export default function WebcamAscii() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [charSize, setCharSize] = useState(10);
   const [contrast, setContrast] = useState(1.2);
+  const [colorMode, setColorMode] = useState<string>("monochrome");
+
+  // Define color schemes
+  const colorSchemes: Record<string, ColorScheme> = {
+    monochrome: {
+      name: "Monochrome",
+      process: () => {
+        // Standard monochrome processing
+        return "white";
+      },
+    },
+    fullColor: {
+      name: "Full Color",
+      process: (r, g, b, contrast) => {
+        // Apply contrast
+        r = Math.min(255, r * contrast);
+        g = Math.min(255, g * contrast);
+        b = Math.min(255, b * contrast);
+        return `rgb(${r}, ${g}, ${b})`;
+      },
+    },
+    sepia: {
+      name: "Sepia",
+      process: (r, g, b, contrast) => {
+        // Apply sepia tone
+        const tr = Math.min(
+          255,
+          (r * 0.393 + g * 0.769 + b * 0.189) * contrast
+        );
+        const tg = Math.min(
+          255,
+          (r * 0.349 + g * 0.686 + b * 0.168) * contrast
+        );
+        const tb = Math.min(
+          255,
+          (r * 0.272 + g * 0.534 + b * 0.131) * contrast
+        );
+        return `rgb(${tr}, ${tg}, ${tb})`;
+      },
+    },
+    neon: {
+      name: "Neon",
+      process: (r, g, b, contrast) => {
+        // Create a neon effect by enhancing the dominant color
+        const max = Math.max(r, g, b);
+        let nr = r,
+          ng = g,
+          nb = b;
+
+        if (max === r) nr = Math.min(255, r * 1.5 * contrast);
+        if (max === g) ng = Math.min(255, g * 1.5 * contrast);
+        if (max === b) nb = Math.min(255, b * 1.5 * contrast);
+
+        return `rgb(${nr}, ${ng}, ${nb})`;
+      },
+    },
+    matrix: {
+      name: "Matrix",
+      process: (r, g, b, contrast) => {
+        // Matrix green effect
+        const brightness = (r + g + b) / 3;
+        const green = Math.min(255, brightness * contrast);
+        return `rgb(0, ${green}, 0)`;
+      },
+    },
+  };
 
   useEffect(() => {
     let animationFrameId: number;
@@ -27,7 +99,7 @@ export default function WebcamAscii() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isVideoReady, charSize, contrast]);
+  }, [isVideoReady, charSize, contrast, colorMode]);
 
   const captureAndProcess = () => {
     const webcam = webcamRef.current;
@@ -59,45 +131,57 @@ export default function WebcamAscii() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, width, height);
 
-    const asciiChars =
-      ' .`^",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$'.split(
-        ""
-      );
+    const asciiChars = " .:-=+*#%@".split("");
 
     const charWidth = charSize;
     const charHeight = charSize;
 
-    ctx.fillStyle = "white";
-    ctx.font = `bold ${charHeight}px "Courier New", monospace`;
     ctx.textBaseline = "top";
+    ctx.font = `bold ${charHeight}px "Courier New", monospace`;
     ctx.textRendering = "geometricPrecision";
+
+    const colorScheme = colorSchemes[colorMode] || colorSchemes.monochrome;
 
     for (let y = 0; y < height; y += charHeight) {
       for (let x = 0; x < width; x += charWidth) {
+        let totalR = 0,
+          totalG = 0,
+          totalB = 0;
         let totalBrightness = 0;
         let sampleCount = 0;
 
         for (let sy = 0; sy < charHeight && y + sy < height; sy += 2) {
           for (let sx = 0; sx < charWidth && x + sx < width; sx += 2) {
             const i = ((y + sy) * width + (x + sx)) * 4;
-            const r = data[i] * contrast;
-            const g = data[i + 1] * contrast;
-            const b = data[i + 2] * contrast;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            totalR += r;
+            totalG += g;
+            totalB += b;
+
             const pixelBrightness = (r + g + b) / 3;
             totalBrightness += pixelBrightness;
             sampleCount++;
           }
         }
 
-        const avgBrightness =
-          sampleCount > 0 ? totalBrightness / sampleCount : 0;
+        if (sampleCount > 0) {
+          const avgBrightness = totalBrightness / sampleCount;
+          const avgR = totalR / sampleCount;
+          const avgG = totalG / sampleCount;
+          const avgB = totalB / sampleCount;
 
-        const charIndex = Math.floor(
-          (Math.min(255, avgBrightness) / 255) * (asciiChars.length - 1)
-        );
-        const char = asciiChars[charIndex];
+          const charIndex = Math.floor(
+            (Math.min(255, avgBrightness) / 255) * (asciiChars.length - 1)
+          );
+          const char = asciiChars[charIndex];
 
-        ctx.fillText(char, x, y);
+          // Apply color based on selected color scheme
+          ctx.fillStyle = colorScheme.process(avgR, avgG, avgB, contrast);
+          ctx.fillText(char, x, y);
+        }
       }
     }
   };
@@ -173,7 +257,7 @@ export default function WebcamAscii() {
             +
           </button>
         </div>
-        <div>
+        <div className="mb-2">
           <span className="mr-2">Contrast: {contrast.toFixed(1)}</span>
           <button
             onClick={decreaseContrast}
@@ -187,6 +271,20 @@ export default function WebcamAscii() {
           >
             +
           </button>
+        </div>
+        <div>
+          <span className="mr-2">Color Mode:</span>
+          <select
+            value={colorMode}
+            onChange={(e) => setColorMode(e.target.value)}
+            className="bg-gray-700 text-white px-2 py-1 rounded"
+          >
+            {Object.entries(colorSchemes).map(([key, scheme]) => (
+              <option key={key} value={key}>
+                {scheme.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
